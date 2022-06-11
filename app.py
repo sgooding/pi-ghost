@@ -9,39 +9,111 @@ from flask import (Flask,
                   url_for)
 
 import os
+from audioplayer import AudioPlayer, check_valid_extension
 
 def get_root_dir():
-    root_path = os.path.abspath('.')
-    return root_path
+    return os.path.abspath('.')
+
+class Button:
+    def __init__(self, name):
+        self._name = name
+        self._on = False
+        self._all_classes = {False:"sndBtn",True:"sndBtnOn"}
+        self._class = self._all_classes[False]
+        self._file = None
+        self._sound = None
+
+    def get_display_name(self):
+        if self.get_file() is not None:
+            return os.path.basename(self.get_file())
+        else:
+            return None
+
+    def load_song(self):
+
+        if self._file is not None:
+            if self._sound is None:
+                print(f'Constructing audio player for button {self._name}')
+                self._sound = AudioPlayer()
+
+            self._sound.load(self._file)
 
 
-class AudioPlayer:
-    def __init__(self):
-        wsl = os.environ.get('WSL',None)
-        self._wsl = False
-        if wsl is not None and wsl.lower() == 'true':
-            print('WSL Enabled')
-            self._wsl = True
-    def play(self, song):
-        if self._wsl:
-            print(f'playing {song}')
-    def stop(self):
-        if self._wsl:
-            print(f'stop song')
-
-#app = Flask(__name__)
-def create_app():
-    app = Flask(__name__)
-
-    with app.app_context():
-        if 'audio_player' not in g:
-            g.audio_player = AudioPlayer()
-
-    app.secret_key = 'somelongsecretkey'
+    def get_on(self):
+        return self._on
     
-    return app
+    def set_on(self, on):
+        self._on = on
+        self._class = self._all_classes[self._on]
+        filename = None
+        if self._file is not None and self._on:
 
-app = create_app()
+            if self._on:
+                filename = os.path.join(get_root_dir(),'static',self._file)
+
+            if self._sound is None:
+                self._sound = AudioPlayer()
+                self._sound.play(filename)
+            else:
+                self._sound.play(filename)
+
+
+
+    def set_file(self, file):
+        self._file = file
+
+    def get_file(self):
+        return self._file
+
+    def toggle(self):
+        if self._on:
+            self.set_on(False)
+        else:
+            self.set_on(True)
+
+        self._class = self._all_classes[self._on]
+
+buttons = [Button(i) for i in range(8)]
+
+
+
+
+#class AudioPlayer:
+#    def __init__(self):
+#        wsl = os.environ.get('WSL',None)
+#        self._wsl = False
+#        if wsl is not None and wsl.lower() == 'true':
+#            print('WSL Enabled')
+#            self._wsl = True
+#    def play(self, song):
+#        if self._wsl:
+#            print(f'playing {song}')
+#    def stop(self):
+#        if self._wsl:
+#            print(f'stop song')
+def load_config_file():
+    import json
+    with open('config.json','r') as fp:
+        config = json.load(fp)
+
+    for i,k in config.items():
+        index = int(i)
+        if not check_valid_extension(k):
+            flash(f'Button [{index}]: Invalid File: {k}')
+            buttons[index].set_on(False)
+            continue
+
+
+        if k is not None:
+            filename = os.path.join(get_root_dir(),'static',k)
+            buttons[index].set_file(filename)
+            buttons[index].load_song()
+
+        buttons[index].set_on(False)
+
+
+app = Flask(__name__)
+app.secret_key = 'somelongsecretkey'
 
 class User:
     def __init__(self,id,username,password):
@@ -51,33 +123,6 @@ class User:
 
 users = [User(1,'sean','hello')]
 
-class Button:
-    def __init__(self, name):
-        self._name = name
-        self._on = False
-        self._all_classes = {False:"sndBtn",True:"sndBtnOn"}
-        self._class = self._all_classes[False]
-        self._file = None
-
-    def get_on(self):
-        return self._on
-    
-    def set_on(self, on):
-        self._on = on
-        self._class = self._all_classes[self._on]
-
-    def set_file(self, file):
-        self._file = file
-
-    def get_file(self):
-        return self._file
-
-    def toggle(self):
-        self._on = not self._on
-        self._class = self._all_classes[self._on]
-
-buttons = [Button(i) for i in range(8)]
-
 @app.before_request
 def before_request():
     g.user = None
@@ -85,7 +130,6 @@ def before_request():
     if 'user_id' in session:
         user = [x for x in users if x.id == session['user_id']][0]
         g.user = user
-        g.root_path = get_root_dir()
 
 
 @app.route('/login',methods=['GET','POST'])
@@ -120,18 +164,14 @@ def profile():
 @app.route("/sound-button", methods=["GET","POST"])
 def sound_button():
 
-    print(f"request.form: {request.form}")
-
     if request.method == "GET":
         return render_template('profile.html')
 
-    print("sound_button")
-    print(f"request.form: {request.form.keys()}")
     if request.method  == "POST":
         for i,b in enumerate(buttons):
             if f"{i}" in request.form:
                 buttons[i].toggle()
-                flash(f"Play [{i}]: {buttons[i].get_file()}")
+                flash(f"Play [{i}]: {buttons[i].get_display_name()}")
             else:
                 buttons[i].set_on(False)
 
@@ -141,17 +181,10 @@ def sound_button():
 
     return render_template('profile.html')
 
+
 @app.route("/load-config",methods=["POST"])
 def load_config():
-    import json
-    with open('config.json','r') as fp:
-        config = json.load(fp)
-
-    for i,k in config.items():
-        index = int(i)
-        buttons[index].set_file(k)
-        buttons[index].set_on(False)
-
+    load_config_file()
     flash('config.json loaded.')
     return render_template('profile.html')
 
@@ -172,15 +205,22 @@ def upload_sound():
     if request.method == "POST":
         if request.files:
             sound  = request.files["sound"]
-            path = os.path.join(g.root_path,'static',sound.filename)
+            path = os.path.join(get_root_dir(),'static',sound.filename)
 
             for i,b in enumerate(buttons):
                 if b._on:
                     print(f"Saving {path} to button {i}")
-                    flash(f"Set Button [{i}]: {sound.filename}")
-                    b.set_file(sound.filename)
-                    sound.save(path)
+
+                    if check_valid_extension(path):
+                        b.set_file(path)
+                        sound.save(path)
+                        b.load_song()
+                        b.set_on(True)
+                        flash(f"Loaded Button [{i}]: {b.get_display_name()}")
+                    else:
+                        flash(f"Failed to load {sound.filename}")
                     break
+
             return redirect(request.url)
     return render_template('profile.html')
 

@@ -6,6 +6,7 @@ pi soundboard project
 
 1. Install and run in dev mode.
 ```
+sudo apt-get install -y libsdl2-mixer-2.0-0
 python3 -m venv venv
 python3 -m pip install -r requirements.txt
 ./start.sh
@@ -27,3 +28,4 @@ python3 -m pip install -r requirements.txt
 1. Enclosure
 2. Remote light control.
 3. Remote light effects.
+
