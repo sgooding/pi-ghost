@@ -9,6 +9,12 @@ from flask import (Flask,
                   url_for)
 
 import os
+
+def get_root_dir():
+    root_path = os.path.abspath('.')
+    return root_path
+
+
 class AudioPlayer:
     def __init__(self):
         wsl = os.environ.get('WSL',None)
@@ -30,7 +36,6 @@ def create_app():
     with app.app_context():
         if 'audio_player' not in g:
             g.audio_player = AudioPlayer()
-        g.button_0 = True
 
     app.secret_key = 'somelongsecretkey'
     
@@ -80,6 +85,7 @@ def before_request():
     if 'user_id' in session:
         user = [x for x in users if x.id == session['user_id']][0]
         g.user = user
+        g.root_path = get_root_dir()
 
 
 @app.route('/login',methods=['GET','POST'])
@@ -166,7 +172,7 @@ def upload_sound():
     if request.method == "POST":
         if request.files:
             sound  = request.files["sound"]
-            path = os.path.join('/home/sgooding/src/pi_ghost/static',sound.filename)
+            path = os.path.join(g.root_path,'static',sound.filename)
 
             for i,b in enumerate(buttons):
                 if b._on:
