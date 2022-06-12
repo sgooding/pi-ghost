@@ -9,7 +9,9 @@ from flask import (Flask,
                   url_for)
 
 import os
-from audioplayer import AudioPlayer, check_valid_extension
+import json
+from audioplayer import AudioPlayer, audio_factory, check_valid_extension
+
 
 def get_root_dir():
     return os.path.abspath('.')
@@ -30,11 +32,11 @@ class Button:
             return None
 
     def load_song(self):
-
+        print("load_song")
         if self._file is not None:
             if self._sound is None:
                 print(f'Constructing audio player for button {self._name}')
-                self._sound = AudioPlayer()
+                self._sound = driver.get_audioplayer()
 
             self._sound.load(self._file)
 
@@ -52,7 +54,7 @@ class Button:
                 filename = os.path.join(get_root_dir(),'static',self._file)
 
             if self._sound is None:
-                self._sound = AudioPlayer()
+                self._sound = driver.get_audioplayer()
                 self._sound.play(filename)
             else:
                 self._sound.play(filename)
@@ -73,43 +75,57 @@ class Button:
 
         self._class = self._all_classes[self._on]
 
+class Driver:
+    def __init__(self):
+        self._params = {
+            "audio_player":"AudioPlayer"
+        }
+        self.load_params()
+
+    def load_params(self):
+        print("Loading Params")
+        param_file = os.path.join('param.json')
+        if os.path.exists(param_file):
+            with open(param_file,'r') as fp:
+                self._params = json.load(fp)
+
+        print(f"Params: \n {self._params}")
+
+    def get_audioplayer(self):
+        if self._params:
+            audioplayer_name = self._params.get("audio_player",None)
+            if audioplayer_name:
+                return audio_factory(audioplayer_name)
+        else:
+            return audio_factory("AudioPlayer")
+
+driver = Driver()
 buttons = [Button(i) for i in range(8)]
 
 
-
-
-#class AudioPlayer:
-#    def __init__(self):
-#        wsl = os.environ.get('WSL',None)
-#        self._wsl = False
-#        if wsl is not None and wsl.lower() == 'true':
-#            print('WSL Enabled')
-#            self._wsl = True
-#    def play(self, song):
-#        if self._wsl:
-#            print(f'playing {song}')
-#    def stop(self):
-#        if self._wsl:
-#            print(f'stop song')
 def load_config_file():
-    import json
-    with open('config.json','r') as fp:
-        config = json.load(fp)
+    config_filename = os.path.join('config.json')
+    if os.path.exists(config_filename):
 
-    for i,k in config.items():
-        index = int(i)
-        if not check_valid_extension(k):
-            flash(f'Button [{index}]: Invalid File: {k}')
+        with open(config_filename,'r') as fp:
+            config = json.load(fp)
+
+        for i,k in config.items():
+            index = int(i)
+            if not check_valid_extension(k):
+                flash(f'Button [{index}]: Invalid File: {k}')
+                buttons[index].set_on(False)
+                continue
+
+            if k is not None:
+                filename = os.path.join(get_root_dir(),'static',k)
+                buttons[index].set_file(filename)
+                buttons[index].load_song()
+
             buttons[index].set_on(False)
-            continue
+    else:
+        print(f'No button config exists. {config_filename}')
 
-
-        if k is not None:
-            filename = os.path.join(get_root_dir(),'static',k)
-            buttons[index].set_file(filename)
-            buttons[index].load_song()
-
-        buttons[index].set_on(False)
 
 
 app = Flask(__name__)
