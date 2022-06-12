@@ -7,9 +7,11 @@ from audioplayer import audio_factory
 class AudioPlayerServer:
     def __init__(self):
         self._player = None
+        self._buffer = dict()
+        self._selected_player = None
 
-    def set_player(self, player):
-        self._player = player
+    def set_player(self, player:str):
+        self._selected_player = player
 
     def connect(self):
         context = zmq.Context()
@@ -31,13 +33,16 @@ class AudioPlayerServer:
                and cmd['audioplayer'] != type(self._player) ):
 
                 self.set_player(audio_factory(cmd['audioplayer']))
-            self._player.play(cmd['filename'])
+
+            filename = cmd['filename']
+            if filename not in self._buffer:
+                self._buffer[filename] = audio_factory(self._selected_player)
+            self._buffer[filename].play(filename)
 
 if __name__ == '__main__':
 
     server = AudioPlayerServer()
 
-    from audioplayer import MockAudioPlayer
-    server.set_player(MockAudioPlayer())
+    server.set_player('MockAudioPlayer')
 
     server.run()
