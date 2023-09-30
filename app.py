@@ -100,7 +100,7 @@ class Driver:
             return audio_factory("AudioPlayer")
 
 driver = Driver()
-buttons = [Button(i) for i in range(8)]
+buttons = [Button(i) for i in range(10)]
 
 
 def load_config_file():

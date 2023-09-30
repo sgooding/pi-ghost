@@ -1,0 +1,86 @@
+
+body{
+    background-color: black;
+    font-family: verdana;
+    font-size: 14px;
+}
+
+.center {
+    border: 1px solid;
+    margin: auto;
+    width: fit-content;
+    height: fit-content;
+    padding: 20px;
+    border-color:white;
+    color: #4e4e4e;
+}
+
+.buttons{
+    position:relative;
+    width:fit-content;
+}
+
+.sndBtn {
+    display:block;
+    width:80px;
+    height:80px;
+    line-height:80px;
+    border: 2px solid #f5f5f5;
+    border-radius: 50%;
+    color:#f5f5f5;
+    text-align:center;
+    text-decoration:none;
+    background: black;
+    box-shadow: 0 0 3px gray;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.sndBtnOn {
+    display:block;
+    width:80px;
+    height:80px;
+    line-height:80px;
+    border: 2px solid #f5f5f5;
+    border-radius: 50%;
+    color:#f5f5f5;
+    text-align:center;
+    text-decoration:none;
+    background: green;
+    box-shadow: 0 0 3px gray;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.sndBtn:hover{
+    background-color: darkgreen;
+}
+
+.saveBtn {
+    display:block;
+    width:80px;
+    height:60px;
+    line-height:30px;
+    border: 2px solid #f5f5f5;
+    border-radius: 20%;
+    color:#f5f5f5;
+    text-align:center;
+    text-decoration:none;
+    background: green;
+    box-shadow: 0 0 3px gray;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.file-open{
+    color:darkgray;
+    background-color:black;
+    border-color:black;
+    border:black 0x;
+    font-size:50;
+    text-underline-position: below;
+}
+.file-open:hover{
+    color:white;
+    font-size:50;
+}
